@@ -1,5 +1,3 @@
-import React from "react";
-
 const SettingsPage = () => {
   return (
     <div className="min-h-screen bg-base-200 p-4 md:p-8">

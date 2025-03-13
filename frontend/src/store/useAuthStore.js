@@ -13,7 +13,7 @@ export const useAuthStore = create((set, get) => ({
   token: localStorage.getItem("token") || null,
   isLoggedIn: !!localStorage.getItem("token"),
   onlineUsers: [],
-  socekt: null,
+  socket: null,
 
   // Store token & configure axios
   storeTokenInLS: (serverToken) => {
@@ -138,10 +138,18 @@ export const useAuthStore = create((set, get) => ({
     const { authUser } = get();
     if (!authUser || get().socket?.connected) return;
 
-    const socket = io(import.meta.env.VITE_BACKEND_URL);
+    const socket = io(import.meta.env.VITE_BACKEND_URL, {
+      query: {
+        userId: authUser._id,
+      },
+    });
     socket.connect();
 
     set({ socket: socket });
+
+    socket.on("getOnlineUsers", (userIds) => {
+      set({ onlineUsers: userIds });
+    });
   },
 
   disconnectSocket: () => {

@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { useAuthStore } from "../store/useAuthStore.js";
+import { useNavigate } from "react-router-dom";
 
 const SignupPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const { signupUser } = useAuthStore();
+  const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -22,7 +24,8 @@ const SignupPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    signupUser(formData);
+    await signupUser(formData);
+    navigate("/");
   };
 
   return (
@@ -92,7 +95,7 @@ const SignupPage = () => {
               />
               <button
                 type="button"
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-base-content/70 hover:text-base-content"
+                className="absolute mt-2 right-3 top-1/2 transform -translate-y-1/2 text-base-content/70 hover:text-base-content"
                 onClick={() => setShowPassword(!showPassword)}
               >
                 {showPassword ? "Hide" : "Show"}

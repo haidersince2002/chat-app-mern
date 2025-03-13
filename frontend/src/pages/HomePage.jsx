@@ -1,27 +1,3 @@
-// import React from "react";
-// import { useChatStore } from "../store/useChatStore";
-// import Sidebar from "../components/Sidebar";
-// import NoChatSelected from "../components/NoChatSelected";
-// import ChatContainer from "../components/ChatContainer";
-
-// const HomePage = () => {
-//   const { selectedUser } = useChatStore();
-
-//   return (
-//     <div className="flex h-screen bg-base-100">
-//       {/* Sidebar */}
-//       <Sidebar />
-
-//       {/* Main Content Area */}
-//       <div className="flex-1 flex flex-col overflow-hidden">
-//         {selectedUser ? <ChatContainer /> : <NoChatSelected />}
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default HomePage;
-
 import React from "react";
 import { useChatStore } from "../store/useChatStore";
 import Sidebar from "../components/Sidebar";
