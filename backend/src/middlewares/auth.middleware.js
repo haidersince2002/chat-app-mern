@@ -8,15 +8,15 @@ const protectRoute = async (req, res, next) => {
     if (!token) {
       return res
         .status(401)
-        .json({ message: "Unauthorized HHTP, Token not provided" });
+        .json({ message: "Unauthorized, Token not provided" });
     }
 
     // console.log("token from auth middleware: ", token);
     const jwtToken = token.replace("Bearer", "").trim();
-    console.log("token from auth middleware: ", jwtToken);
+    // console.log("token from auth middleware: ", jwtToken);
 
     const decode = jwt.verify(jwtToken, process.env.JWT_SECRET_KEY);
-    console.log(decode);
+    // console.log(decode);
 
     if (!decode) {
       return res.status(401).json({ message: "Unauthorized - Invalid Token" });
@@ -25,7 +25,7 @@ const protectRoute = async (req, res, next) => {
     const userData = await User.findOne({ email: decode.email }).select({
       password: 0,
     });
-    console.log(userData);
+    // console.log(userData);
 
     if (!userData) {
       return res.status(404).json({ message: "User not found" });
@@ -34,6 +34,8 @@ const protectRoute = async (req, res, next) => {
     req.user = userData;
     req.token = token;
     req.userId = userData._id;
+    // console.log("User ID from token:", req.userId);
+    // console.log("Authenticated User:", req.user);
 
     next();
   } catch (error) {

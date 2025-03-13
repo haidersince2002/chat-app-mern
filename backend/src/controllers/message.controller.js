@@ -26,10 +26,10 @@ export const getMessages = async (req, res) => {
 
     const messages = await Message.find({
       $or: [
-        { senderId: myId, recieverId: userToChatId },
-        { senderId: userToChatId, recieverId: myId },
+        { senderId: myId, receiverId: userToChatId },
+        { senderId: userToChatId, receiverId: myId },
       ],
-    });
+    }).sort({ createdAt: 1 }); // Sort messages by timestamp
 
     res.status(200).json(messages);
   } catch (error) {
@@ -44,8 +44,14 @@ export const getMessages = async (req, res) => {
 export const sendMessage = async (req, res) => {
   try {
     const { text, image } = req.body;
-    const { id: recieverId } = req.params;
-    const myId = req.userId;
+    const receiverId = req.params.userId; // Get from URL parameter
+    const senderId = req.userId; // Get from the protectRoute middleware
+
+    if (!senderId || !receiverId) {
+      return res
+        .status(400)
+        .json({ error: "Sender and receiver IDs are required" });
+    }
 
     let imageUrl;
     if (image) {
@@ -55,14 +61,12 @@ export const sendMessage = async (req, res) => {
 
     const newMessage = new Message({
       senderId,
-      recieverId,
+      receiverId, // Fixed spelling to match the model
       text,
       image: imageUrl,
     });
 
     await newMessage.save();
-
-    //todo: realtime functionality goes here => socket.io
 
     res.status(201).json(newMessage);
   } catch (error) {

@@ -23,7 +23,7 @@ export const signup = async (req, res) => {
       fullName,
       email,
       password, // Make sure hashing is handled in the user model
-      profilePic: profilePic || "default-profile-pic.jpg",
+      profilePic: profilePic,
     });
 
     // Generate token
@@ -99,21 +99,30 @@ export const logout = async (req, res) => {
 
 export const updateProfile = async (req, res) => {
   try {
-    const { profilePic } = req.body;
+    const { profilePic, fullName, email } = req.body;
     const userId = req.userId;
 
-    if (!profilePic) {
-      return res.status(400).json({ message: "ProfilePic is required" });
+    // Create an update object
+    const updateFields = {};
+
+    // Only add fields that are provided
+    if (fullName) updateFields.fullName = fullName;
+    if (email) updateFields.email = email;
+
+    // Only upload to cloudinary if a new profile pic is provided
+    if (profilePic) {
+      const uploadResponse = await cloudinary.uploader.upload(profilePic);
+      updateFields.profilePic = uploadResponse.secure_url;
     }
 
-    const uploadResponse = await cloudinary.uploader.upload(profilePic);
-    const updatedUser = await User.findByIdAndUpdate(
-      userId,
-      {
-        profilePic: uploadResponse.secure_url,
-      },
-      { new: true }
-    ).select("-password");
+    // Only update if there are fields to update
+    if (Object.keys(updateFields).length === 0) {
+      return res.status(400).json({ message: "No fields to update" });
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(userId, updateFields, {
+      new: true,
+    }).select("-password");
 
     if (!updatedUser) {
       return res.status(404).json({ message: "User not found" });
