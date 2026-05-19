@@ -1,206 +1,207 @@
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { useAuthStore } from "../store/useAuthStore.js";
-import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent } from "@/components/ui/card";
+import { Eye, EyeOff, Mail, Lock, User, MessageCircle, ArrowRight, Check, X } from "lucide-react";
 
 const SignupPage = () => {
   const [showPassword, setShowPassword] = useState(false);
-  const { signupUser } = useAuthStore();
-  const navigate = useNavigate();
+  const [formData, setFormData] = useState({ fullName: "", email: "", password: "" });
+  const { signupUser, isSigningUp } = useAuthStore();
 
-  const [formData, setFormData] = useState({
-    fullName: "",
-    email: "",
-    password: "",
-  });
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value,
-    });
-  };
-
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    await signupUser(formData);
-    navigate("/");
+    signupUser(formData);
   };
+
+  const pw = formData.password;
+  const checks = [
+    { label: "At least 6 characters", pass: pw.length >= 6 },
+    { label: "Contains uppercase letter", pass: /[A-Z]/.test(pw) },
+    { label: "Contains a number", pass: /[0-9]/.test(pw) },
+  ];
+  const strength = checks.filter((c) => c.pass).length;
+  const strengthColor = ["bg-destructive", "bg-destructive", "bg-amber-400", "bg-emerald-500"][strength];
 
   return (
-    <div className="min-h-screen bg-base-200 flex">
-      {/* Left side - Form */}
-      <div className="w-full md:w-1/2 p-8 flex items-center justify-center">
-        <div className="card bg-base-100 shadow-xl rounded-lg p-8 w-full max-w-md">
-          {/* Logo and Header */}
-          <div className="text-center mb-10">
-            <div className="avatar mb-4">
-              <div className="w-16 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2 mx-auto">
-                <img src="/logo.png" alt="ChatConnect Logo" />
-              </div>
+    <div className="min-h-[calc(100vh-64px)] flex bg-background bg-grid">
+      {/* Left — Form */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-10">
+        <div className="w-full max-w-sm animate-slide-up">
+          {/* Logo */}
+          <div className="flex flex-col items-center mb-8">
+            <div className="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center mb-4 shadow-lg animate-float">
+              <MessageCircle className="w-6 h-6 text-primary-foreground" />
             </div>
-            <h1 className="text-3xl font-bold text-primary mb-2">Sign Up</h1>
-            <p className="text-base-content/70">Create your free account</p>
+            <h1 className="text-2xl font-bold tracking-tight">
+              Create <span className="text-gradient">account</span>
+            </h1>
+            <p className="text-muted-foreground text-sm mt-1">Join ChatConnect and start chatting</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Full Name Field */}
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text text-base-content">Full Name</span>
-              </label>
-              <input
-                type="text"
-                name="fullName"
-                value={formData.fullName}
-                onChange={handleChange}
-                className="input input-bordered w-full focus:outline-none focus:ring-2 focus:ring-primary"
-                placeholder="John Doe"
-                required
-              />
-            </div>
+          <Card className="glass-card border-0 shadow-2xl">
+            <CardContent className="pt-6">
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Name */}
+                <div className="space-y-1.5">
+                  <Label htmlFor="fullName" className="text-xs uppercase tracking-wider text-muted-foreground">
+                    Full Name
+                  </Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      id="fullName"
+                      placeholder="John Doe"
+                      className="pl-9"
+                      value={formData.fullName}
+                      onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                      required
+                    />
+                  </div>
+                </div>
 
-            {/* Email Field */}
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text text-base-content">
-                  Email Address
-                </span>
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                className="input input-bordered w-full focus:outline-none focus:ring-2 focus:ring-primary"
-                placeholder="john@example.com"
-                required
-              />
-            </div>
+                {/* Email */}
+                <div className="space-y-1.5">
+                  <Label htmlFor="email" className="text-xs uppercase tracking-wider text-muted-foreground">
+                    Email
+                  </Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="you@example.com"
+                      className="pl-9"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      required
+                    />
+                  </div>
+                </div>
 
-            {/* Password Field */}
-            <div className="form-control relative">
-              <label className="label">
-                <span className="label-text text-base-content">Password</span>
-              </label>
-              <input
-                type={showPassword ? "text" : "password"}
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                className="input input-bordered w-full focus:outline-none focus:ring-2 focus:ring-primary"
-                placeholder="••••••••"
-                required
-              />
-              <button
-                type="button"
-                className="absolute mt-2 right-3 top-1/2 transform -translate-y-1/2 text-base-content/70 hover:text-base-content"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? "Hide" : "Show"}
-              </button>
-            </div>
+                {/* Password */}
+                <div className="space-y-1.5">
+                  <Label htmlFor="password" className="text-xs uppercase tracking-wider text-muted-foreground">
+                    Password
+                  </Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      className="pl-9 pr-10"
+                      value={formData.password}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
 
-            {/* Submit Button */}
-            <button type="submit" className="btn btn-primary w-full mt-4">
-              Create Account
-            </button>
+                  {/* Strength meter */}
+                  {pw.length > 0 && (
+                    <div className="space-y-2 animate-fade-in">
+                      <div className="flex gap-1">
+                        {[1, 2, 3].map((n) => (
+                          <div
+                            key={n}
+                            className={`h-1 flex-1 rounded-full transition-all duration-300 ${
+                              strength >= n ? strengthColor : "bg-border"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      <div className="space-y-1">
+                        {checks.map((c, i) => (
+                          <div key={i} className="flex items-center gap-2 text-xs">
+                            {c.pass
+                              ? <Check className="w-3 h-3 text-emerald-500" />
+                              : <X className="w-3 h-3 text-muted-foreground" />
+                            }
+                            <span className={c.pass ? "text-emerald-500" : "text-muted-foreground"}>
+                              {c.label}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
 
-            {/* Login Link */}
-            <div className="text-center mt-4">
-              <span className="text-base-content/70">
-                Already have an account?{" "}
-                <NavLink to="/login" className="link link-primary font-medium">
-                  Log in
-                </NavLink>
-              </span>
-            </div>
-          </form>
+                {/* Submit */}
+                <Button type="submit" className="w-full mt-2" disabled={isSigningUp}>
+                  {isSigningUp ? (
+                    <span className="flex items-center gap-2">
+                      <span className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                      Creating account...
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-2">
+                      Create Account <ArrowRight className="w-4 h-4" />
+                    </span>
+                  )}
+                </Button>
+
+                <p className="text-center text-sm text-muted-foreground pt-1">
+                  Already have an account?{" "}
+                  <NavLink to="/login" className="text-primary hover:underline font-medium">
+                    Sign in
+                  </NavLink>
+                </p>
+              </form>
+            </CardContent>
+          </Card>
         </div>
       </div>
 
-      {/* Right side - Chat App Preview */}
-      <div className="hidden md:block md:w-1/2 bg-base-100">
-        <div className="h-full p-8">
-          <div className="card bg-base-200 rounded-lg shadow-lg overflow-hidden h-full">
-            {/* Chat Header */}
-            <div className="bg-base-300 p-4 flex items-center">
-              <div className="avatar">
-                <div className="w-10 rounded-full">
-                  <img src="logo.png" alt="User" />
-                </div>
+      {/* Right — Chat Preview */}
+      <div className="hidden lg:flex lg:w-1/2 items-center justify-center p-10">
+        <div className="w-full max-w-xs animate-fade-in">
+          <Card className="glass-card border-0 overflow-hidden shadow-2xl">
+            {/* Header */}
+            <div className="p-4 border-b border-border flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center">
+                <MessageCircle className="w-4 h-4 text-primary-foreground" />
               </div>
-              <div className="ml-3">
-                <h3 className="text-base-content font-medium">ChatConnect</h3>
-                <p className="text-xs text-base-content/60">Online</p>
-              </div>
-            </div>
-
-            {/* Chat Messages */}
-            <div className="p-4 flex-1 overflow-y-auto">
-              {/* Received message */}
-              <div className="chat chat-start mb-4">
-                <div className="chat-image avatar">
-                  <div className="w-8 rounded-full">
-                    <img src="logo.png" alt="User" />
-                  </div>
-                </div>
-                <div className="chat-bubble bg-base-300 text-base-content">
-                  Welcome to ChatConnect!
-                </div>
-                <div className="chat-footer text-xs text-base-content/50">
-                  10:42 AM
-                </div>
-              </div>
-
-              {/* Sent message */}
-              <div className="chat chat-end mb-4">
-                <div className="chat-image avatar">
-                  <div className="w-8 rounded-full">
-                    <img src="logo.png" alt="User" />
-                  </div>
-                </div>
-                <div className="chat-bubble bg-primary text-white">
-                  Looks great!
-                </div>
-                <div className="chat-footer text-xs text-base-content/50">
-                  10:45 AM
+              <div>
+                <p className="text-sm font-semibold">ChatConnect</p>
+                <div className="flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
+                  <span className="text-xs text-emerald-500">Online</span>
                 </div>
               </div>
             </div>
-
-            {/* Features Section */}
-            <div className="bg-base-300 p-4 border-t border-base-content/10">
-              <h3 className="text-base-content font-medium mb-3">Features:</h3>
-              <ul className="space-y-2">
-                <li className="flex items-center text-base-content/70">
-                  <svg
-                    className="w-4 h-4 mr-2 text-primary"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  End-to-end encryption
-                </li>
-                <li className="flex items-center text-base-content/70">
-                  <svg
-                    className="w-4 h-4 mr-2 text-primary"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path fillRule="evenodd" d="..." clipRule="evenodd" />
-                  </svg>
-                  Real-time messaging
-                </li>
-              </ul>
+            {/* Messages */}
+            <div className="p-4 space-y-2.5">
+              <div className="bubble-received px-3 py-2 text-xs max-w-[80%]">
+                Hey! Welcome to ChatConnect 👋
+              </div>
+              <div className="bubble-sent px-3 py-2 text-xs max-w-[80%] ml-auto">
+                This looks amazing! 🔥
+              </div>
+              <div className="bubble-received px-3 py-2 text-xs max-w-[80%]">
+                Real-time with read receipts ✓✓
+              </div>
+              <div className="bubble-sent px-3 py-2 text-xs max-w-[80%] ml-auto">
+                Let's get started! 🚀
+              </div>
+              {/* Typing indicator */}
+              <div className="bubble-received px-3 py-2.5 flex items-center gap-1 w-fit">
+                <span className="typing-dot text-muted-foreground" />
+                <span className="typing-dot text-muted-foreground" />
+                <span className="typing-dot text-muted-foreground" />
+              </div>
             </div>
-          </div>
+          </Card>
         </div>
       </div>
     </div>

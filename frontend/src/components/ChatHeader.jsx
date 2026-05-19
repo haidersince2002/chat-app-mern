@@ -1,57 +1,63 @@
-import { X } from "lucide-react";
+import { X, Menu } from "lucide-react";
 import { useAuthStore } from "../store/useAuthStore";
 import { useChatStore } from "../store/useChatStore";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 
-const ChatHeader = () => {
-  const { selectedUser, setSelectedUser } = useChatStore();
+const ChatHeader = ({ onMenuClick }) => {
+  const { selectedUser, setSelectedUser, typingUsers } = useChatStore();
   const { onlineUsers } = useAuthStore();
 
+  const isOnline = onlineUsers?.includes(selectedUser?._id);
+  const isTyping = typingUsers[selectedUser?._id];
+
   return (
-    <div className="sticky top-0 bg-base-100 z-20 p-4 border-b border-base-300">
-      <div className="bg-base-100 p-4 border-b border-base-300 sticky top-0 z-10">
-        <div className="flex items-center justify-between">
-          {/* User Info */}
-          <div className="flex items-center gap-4">
-            {/* Avatar with online indicator */}
-            <div className="avatar relative">
-              <div className="w-10 h-10 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2">
-                <img
-                  src={selectedUser?.profilePic || "/avatar.png"}
-                  alt={`${selectedUser?.fullName}'s profile`}
-                  className="rounded-full object-cover"
-                />
-              </div>
-              {(onlineUsers || []).includes(selectedUser?._id) && (
-                <span className="absolute bottom-0 right-0 w-3 h-3 bg-success rounded-full border-2 border-base-100" />
-              )}
-            </div>
+    <div className="h-14 px-4 flex items-center justify-between border-b border-border bg-card shrink-0">
+      <div className="flex items-center gap-3">
+        {/* Mobile menu */}
+        <Button variant="ghost" size="icon" onClick={onMenuClick} className="lg:hidden -ml-2 rounded-full w-8 h-8">
+          <Menu className="w-4 h-4" />
+        </Button>
 
-            <div>
-              <h3 className="text-base-content font-medium">
-                {selectedUser?.fullName}
-              </h3>
-              <div className="flex items-center text-xs text-base-content/70">
-                {(onlineUsers || []).includes(selectedUser?._id) && (
-                  <span className="w-2 h-2 bg-success rounded-full mr-1" />
-                )}
-                <span>
-                  {(onlineUsers || []).includes(selectedUser?._id)
-                    ? "Online"
-                    : "Offline"}
-                </span>
-              </div>
-            </div>
+        {/* Avatar */}
+        <div className="relative">
+          <Avatar className="w-9 h-9">
+            <AvatarImage src={selectedUser?.profilePic || "/avatar.png"} alt={selectedUser?.fullName} />
+            <AvatarFallback className="text-xs bg-primary/10 text-primary">
+              {selectedUser?.fullName?.[0]?.toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+          {isOnline && <span className="absolute bottom-0 right-0 online-dot border-card" />}
+        </div>
+
+        {/* Name + status */}
+        <div>
+          <p className="font-semibold text-sm leading-tight">{selectedUser?.fullName}</p>
+          <div className="text-xs">
+            {isTyping ? (
+              <span className="text-primary flex items-center gap-1">
+                typing
+                <span className="typing-dot" /><span className="typing-dot" /><span className="typing-dot" />
+              </span>
+            ) : isOnline ? (
+              <span className="text-emerald-500 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" /> Online
+              </span>
+            ) : (
+              <span className="text-muted-foreground">Offline</span>
+            )}
           </div>
-
-          {/* Close Button */}
-          <button
-            onClick={() => setSelectedUser(null)}
-            className="btn btn-circle btn-sm bg-base-300 hover:bg-base-200 border-0"
-          >
-            <X className="size-5 text-base-content/70" />
-          </button>
         </div>
       </div>
+
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={() => setSelectedUser(null)}
+        className="rounded-full w-8 h-8 text-muted-foreground hover:text-foreground"
+      >
+        <X className="w-4 h-4" />
+      </Button>
     </div>
   );
 };

@@ -8,7 +8,6 @@ const messageSchema = new mongoose.Schema(
       required: true,
     },
     receiverId: {
-      // Fixed spelling from "recieverId" to "receiverId"
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
@@ -21,6 +20,17 @@ const messageSchema = new mongoose.Schema(
       type: String,
       required: false,
     },
+    status: {
+      type: String,
+      enum: ["sent", "delivered", "read"],
+      default: "sent",
+    },
+    deletedFor: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
   },
   { timestamps: true }
 );

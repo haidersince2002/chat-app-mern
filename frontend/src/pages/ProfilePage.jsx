@@ -1,193 +1,161 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useAuthStore } from "../store/useAuthStore";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Separator } from "@/components/ui/separator";
+import { Camera, Mail, User, Calendar, Shield } from "lucide-react";
 
 const ProfilePage = () => {
-  const [formData, setFormData] = useState({
-    fullName: "",
-    email: "",
-  });
-  const [updateDetails, setUpdateDetails] = useState(false);
-  const [selectedImage, setSelectedImage] = useState(null);
   const { updateProfile, authUser, isUpdatingProfile } = useAuthStore();
+  const [editing, setEditing] = useState(false);
+  const [formData, setFormData] = useState({ fullName: "", email: "" });
+  const [selectedImage, setSelectedImage] = useState(null);
 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
     const reader = new FileReader();
     reader.readAsDataURL(file);
-
     reader.onload = async () => {
       setSelectedImage(reader.result);
       await updateProfile({ profilePic: reader.result });
     };
   };
 
+  const handleSave = async () => {
+    await updateProfile(formData);
+    setEditing(false);
+  };
+
   return (
-    <div className="min-h-screen bg-base-200 p-4 md:p-8">
-      {/* Profile Header */}
-      <div className="mb-10 space-y-2">
-        <h1 className="text-3xl font-bold text-primary">Profile</h1>
-        <p className="text-base-content/70">Manage your account information</p>
-      </div>
+    <div className="min-h-[calc(100vh-64px)] bg-background bg-grid p-4 sm:p-8">
+      <div className="max-w-2xl mx-auto space-y-5 animate-slide-up">
+        <div>
+          <h1 className="text-xl font-bold tracking-tight">
+            <span className="text-gradient">Profile</span>
+          </h1>
+          <p className="text-muted-foreground text-sm mt-0.5">Manage your account information</p>
+        </div>
 
-      {/* Avatar Section */}
-      <div className="card bg-base-100 shadow-xl rounded-lg p-6 mb-8">
-        <div className="flex flex-col items-center space-y-4">
-          <div className="avatar relative">
-            <div className="w-32 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2">
-              <img
-                src={selectedImage || authUser?.profilePic || "avatar.png"}
-                alt="Profile"
-                className="rounded-full object-cover"
-              />
+        {/* Avatar Card */}
+        <Card className="glass-card border-0">
+          <CardContent className="pt-6 pb-6">
+            <div className="flex flex-col items-center gap-3">
+              <div className="relative group">
+                <Avatar className="w-24 h-24 ring-4 ring-primary/20">
+                  <AvatarImage src={selectedImage || authUser?.profilePic || "/avatar.png"} />
+                  <AvatarFallback className="text-2xl bg-primary/10 text-primary">
+                    {authUser?.fullName?.[0]?.toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <label
+                  htmlFor="avatar-upload"
+                  className="absolute bottom-0.5 right-0.5 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center cursor-pointer shadow-md hover:opacity-90 transition-opacity"
+                >
+                  <Camera className="w-3.5 h-3.5" />
+                  <input type="file" id="avatar-upload" accept="image/*" onChange={handleImageUpload} disabled={isUpdatingProfile} className="hidden" />
+                </label>
+              </div>
+              <div className="text-center">
+                <p className="font-semibold">{authUser?.fullName}</p>
+                <p className="text-muted-foreground text-xs">
+                  {isUpdatingProfile ? "Uploading..." : "Click the camera to update"}
+                </p>
+              </div>
             </div>
-            <label
-              htmlFor="avatar-upload"
-              className="btn btn-circle btn-sm absolute bottom-0 right-0 bg-base-300 border-0 hover:bg-base-200 transition-all"
-            >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110 4.069V3a2 2 0 012-2h4a2 2 0 012 2v.896a2 2 0 001.664.89l.812 1.22A2 2 0 0121 7.07V19a2 2 0 01-2 2H5a2 2 0 01-2-2V7.07z"
+          </CardContent>
+        </Card>
+
+        {/* Profile Info */}
+        <Card className="glass-card border-0">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-base font-semibold">Profile Information</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Name */}
+            <div className="space-y-1.5">
+              <Label className="text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                <User className="w-3 h-3" /> Full Name
+              </Label>
+              {editing ? (
+                <Input
+                  value={formData.fullName}
+                  onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                  placeholder={authUser?.fullName}
                 />
-              </svg>
-              <input
-                type="file"
-                id="avatar-upload"
-                accept="image/*"
-                onChange={handleImageUpload}
-                disabled={isUpdatingProfile}
-                className="hidden"
-              />
-            </label>
-          </div>
-          <p className="text-sm text-center text-base-content/70">
-            {isUpdatingProfile
-              ? "Uploading..."
-              : "Click the camera icon to update your photo"}
-          </p>
-        </div>
-      </div>
-
-      {/* Profile Form */}
-      <div className="card bg-base-100 shadow-xl rounded-lg p-6 mb-8">
-        <h2 className="text-xl font-bold text-primary mb-6">
-          Profile Information
-        </h2>
-        <form className="space-y-6">
-          {/* Full Name */}
-          <div className="form-control">
-            <label className="label">
-              <span className="label-text text-base-content">Full Name</span>
-            </label>
-            {updateDetails ? (
-              <input
-                type="text"
-                name="fullName"
-                value={formData.fullName}
-                onChange={(e) =>
-                  setFormData({ ...formData, fullName: e.target.value })
-                }
-                className="input input-bordered w-full focus:outline-none focus:ring-2 focus:ring-primary"
-                placeholder="John Doe"
-                required
-              />
-            ) : (
-              <div className="bg-base-200 p-3 rounded-md border border-base-300">
-                {authUser?.fullName || "Not set"}
-              </div>
-            )}
-          </div>
-
-          {/* Email */}
-          <div className="form-control">
-            <label className="label">
-              <span className="label-text text-base-content">
-                Email Address
-              </span>
-            </label>
-            {updateDetails ? (
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={(e) =>
-                  setFormData({ ...formData, email: e.target.value })
-                }
-                className="input input-bordered w-full focus:outline-none focus:ring-2 focus:ring-primary"
-                placeholder="john@example.com"
-                required
-              />
-            ) : (
-              <div className="bg-base-200 p-3 rounded-md border border-base-300">
-                {authUser?.email || "Not set"}
-              </div>
-            )}
-          </div>
-
-          <div className="flex flex-col md:flex-row gap-4">
-            {updateDetails && (
-              <button
-                type="button"
-                onClick={() => updateProfile(formData)}
-                disabled={isUpdatingProfile}
-                className="btn btn-primary w-full md:w-auto"
-              >
-                {isUpdatingProfile ? (
-                  <span className="loading loading-spinner"></span>
-                ) : (
-                  "Update Profile"
-                )}
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={() => setUpdateDetails(!updateDetails)}
-              disabled={isUpdatingProfile}
-              className={`btn w-full md:w-auto ${
-                updateDetails ? "btn-outline" : "btn-secondary"
-              }`}
-            >
-              {updateDetails ? "Cancel" : "Edit Profile"}
-            </button>
-          </div>
-        </form>
-      </div>
-
-      {/* Account Information */}
-      <div className="card bg-base-100 shadow-xl rounded-lg p-6">
-        <h2 className="text-xl font-bold text-primary mb-6">Account Details</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="form-control">
-            <label className="label">
-              <span className="label-text text-base-content">Member Since</span>
-            </label>
-            <div className="bg-base-200 p-3 rounded-md border border-base-300">
-              {authUser?.createdAt
-                ? new Date(authUser.createdAt).toLocaleDateString()
-                : "N/A"}
+              ) : (
+                <div className="text-sm bg-muted/50 px-3 py-2.5 rounded-lg">{authUser?.fullName}</div>
+              )}
             </div>
-          </div>
-          <div className="form-control">
-            <label className="label">
-              <span className="label-text text-base-content">
-                Account Status
+
+            {/* Email */}
+            <div className="space-y-1.5">
+              <Label className="text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                <Mail className="w-3 h-3" /> Email Address
+              </Label>
+              {editing ? (
+                <Input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  placeholder={authUser?.email}
+                />
+              ) : (
+                <div className="text-sm bg-muted/50 px-3 py-2.5 rounded-lg">{authUser?.email}</div>
+              )}
+            </div>
+
+            <div className="flex gap-2 pt-1">
+              {editing ? (
+                <>
+                  <Button onClick={handleSave} disabled={isUpdatingProfile} size="sm">
+                    {isUpdatingProfile ? "Saving..." : "Save Changes"}
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => setEditing(false)}>Cancel</Button>
+                </>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => { setEditing(true); setFormData({ fullName: authUser?.fullName || "", email: authUser?.email || "" }); }}
+                >
+                  Edit Profile
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Account Details */}
+        <Card className="glass-card border-0">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-base font-semibold">Account Details</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground flex items-center gap-2">
+                <Calendar className="w-3.5 h-3.5" /> Member Since
               </span>
-            </label>
-            <span className="badge ml-3 badge-success gap-2">
-              <span className="w-2 h-2 rounded-full bg-success"></span>
-              Active
-            </span>
-          </div>
-        </div>
+              <span className="font-medium">
+                {authUser?.createdAt
+                  ? new Date(authUser.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
+                  : "N/A"}
+              </span>
+            </div>
+            <Separator />
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground flex items-center gap-2">
+                <Shield className="w-3.5 h-3.5" /> Status
+              </span>
+              <span className="flex items-center gap-1.5 text-emerald-500 font-medium text-xs">
+                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" /> Active
+              </span>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

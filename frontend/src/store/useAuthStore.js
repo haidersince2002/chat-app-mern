@@ -1,158 +1,135 @@
 import { create } from "zustand";
-import { axiosInstance } from "../lib/axios.js";
+import { axiosInstance, setUnauthorizedHandler } from "../lib/axios.js";
 import { toast } from "react-toastify";
 import { io } from "socket.io-client";
 
+// ─── Token helpers ────────────────────────────────────────────────────────────
+// Single source of truth: token lives in localStorage and is always injected
+// into the axios default Authorization header. No component/store ever reads
+// localStorage directly or passes headers manually.
+
+const TOKEN_KEY = "cc_token";
+
+const readToken = () => localStorage.getItem(TOKEN_KEY);
+
+const applyToken = (token) => {
+  if (token) {
+    axiosInstance.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+    localStorage.setItem(TOKEN_KEY, token);
+  } else {
+    delete axiosInstance.defaults.headers.common["Authorization"];
+    localStorage.removeItem(TOKEN_KEY);
+  }
+};
+
+// Apply stored token immediately on module load so any request made before
+// checkAuth() resolves is already authenticated.
+applyToken(readToken());
+
+// ─── Store ────────────────────────────────────────────────────────────────────
+
 export const useAuthStore = create((set, get) => ({
-  // State
   authUser: null,
   isSigningUp: false,
   isLoggingIn: false,
   isUpdatingProfile: false,
   isCheckingAuth: true,
-  token: localStorage.getItem("token") || null,
-  isLoggedIn: !!localStorage.getItem("token"),
   onlineUsers: [],
   socket: null,
 
-  // Store token & configure axios
-  storeTokenInLS: (serverToken) => {
-    if (!serverToken) return;
-
-    localStorage.setItem("token", serverToken);
-
-    // Set token in axios headers - ensure this is actually happening
-    axiosInstance.defaults.headers.common[
-      "Authorization"
-    ] = `Bearer ${serverToken}`;
-    // console.log(
-    //   "Set token in headers:",
-    //   axiosInstance.defaults.headers.common["Authorization"]
-    // );
-
-    set({ token: serverToken, isLoggedIn: true });
-  },
-
-  // Check authentication
+  // ── Auth check on page load ───────────────────────────────────────────────
   checkAuth: async () => {
-    const { token } = get();
-    if (!token) return set({ isCheckingAuth: false, authUser: null });
+    if (!readToken()) return set({ isCheckingAuth: false, authUser: null });
 
     try {
-      const res = await axiosInstance.get("api/auth/check", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await axiosInstance.get("/api/auth/check");
       set({ authUser: res.data });
       get().connectSocket();
-    } catch (error) {
-      console.error("Error in checkAuth:", error);
+    } catch {
+      applyToken(null);                      // clear invalid token
       set({ authUser: null });
     } finally {
       set({ isCheckingAuth: false });
     }
   },
 
-  // Logout user
-  logoutUser: () => {
-    localStorage.removeItem("token");
-    delete axiosInstance.defaults.headers.common["Authorization"];
-
-    set({ token: null, authUser: null, isLoggedIn: false });
-    toast.success("Logged out successfully");
-    get().disconnectSocket();
-  },
-
-  // Initialize authentication on app load
-  initializeAuth: () => {
-    const { token } = get();
-    if (token) {
-      axiosInstance.defaults.headers.common[
-        "Authorization"
-      ] = `Bearer ${token}`;
-      get().checkAuth();
-    }
-  },
-
-  // Signup user
+  // ── Signup ────────────────────────────────────────────────────────────────
   signupUser: async (data) => {
     set({ isSigningUp: true });
     try {
-      const response = await axiosInstance.post("/api/auth/signup", data);
-      get().storeTokenInLS(response.data.token);
-
-      set({ authUser: response.data.userData });
-      toast.success("Account Created Successfully");
+      const res = await axiosInstance.post("/api/auth/signup", data);
+      applyToken(res.data.token);
+      set({ authUser: res.data.userData });
+      toast.success("Account created successfully!");
       get().connectSocket();
     } catch (error) {
-      console.error("Signup Error:", error);
       toast.error(error.response?.data?.message || "Signup failed");
     } finally {
       set({ isSigningUp: false });
     }
   },
 
-  // Login user
+  // ── Login ─────────────────────────────────────────────────────────────────
   loginUser: async (data) => {
     set({ isLoggingIn: true });
     try {
       const res = await axiosInstance.post("/api/auth/login", data);
-      get().storeTokenInLS(res.data.token);
-
+      applyToken(res.data.token);
       set({ authUser: res.data.userData });
-      toast.success("Logged in Successfully");
-      await get().checkAuth();
-
+      toast.success("Logged in successfully!");
       get().connectSocket();
     } catch (error) {
-      console.error("Login Error:", error);
       toast.error(error.response?.data?.message || "Login failed");
     } finally {
       set({ isLoggingIn: false });
     }
   },
 
+  // ── Logout ────────────────────────────────────────────────────────────────
+  logoutUser: () => {
+    applyToken(null);
+    set({ authUser: null });
+    get().disconnectSocket();
+    toast.success("Logged out successfully");
+  },
+
+  // ── Update Profile ────────────────────────────────────────────────────────
   updateProfile: async (data) => {
     set({ isUpdatingProfile: true });
     try {
-      // Get the current token and explicitly set it in headers for this request
-      const { token } = get();
-      // console.log("Token before request:", token);
-
-      const res = await axiosInstance.put("/api/auth/update-profile", data, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
+      const res = await axiosInstance.put("/api/auth/update-profile", data);
       set({ authUser: res.data.updatedUser });
       toast.success("Profile updated successfully");
     } catch (error) {
-      console.log("Error in update profile", error);
       toast.error(error.response?.data?.message || "Update failed");
     } finally {
       set({ isUpdatingProfile: false });
     }
   },
 
+  // ── Socket ────────────────────────────────────────────────────────────────
   connectSocket: () => {
     const { authUser } = get();
     if (!authUser || get().socket?.connected) return;
 
     const socket = io(import.meta.env.VITE_BACKEND_URL, {
-      query: {
-        userId: authUser._id,
-      },
+      query: { userId: authUser._id },
     });
     socket.connect();
+    set({ socket });
 
-    set({ socket: socket });
-
-    socket.on("getOnlineUsers", (userIds) => {
-      set({ onlineUsers: userIds });
-    });
+    socket.on("getOnlineUsers", (userIds) => set({ onlineUsers: userIds }));
   },
+
 
   disconnectSocket: () => {
     if (get().socket?.connected) get().socket.disconnect();
+    set({ socket: null, onlineUsers: [] });
   },
 }));
+
+// Wire up auto-logout on 401 (token expired / invalid)
+setUnauthorizedHandler(() => {
+  const state = useAuthStore.getState();
+  if (state.authUser) state.logoutUser();
+});

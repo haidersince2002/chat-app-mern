@@ -1,5 +1,7 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 import Navbar from "./components/Navbar";
 import HomePage from "./pages/HomePage";
@@ -9,51 +11,61 @@ import SettingsPage from "./pages/SettingsPage";
 import ProfilePage from "./pages/ProfilePage";
 
 import { useAuthStore } from "./store/useAuthStore.js";
+import { useThemeStore } from "./store/useThemeStore.js";
 import { useEffect } from "react";
-import { Navigate } from "react-router-dom";
-
-import { Loader } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 const App = () => {
-  const { authUser, checkAuth, isCheckingAuth, onlineUsers } = useAuthStore();
-
-  // console.log({ onlineUsers });
+  const { authUser, checkAuth, isCheckingAuth } = useAuthStore();
+  const { initializeTheme } = useThemeStore();
 
   useEffect(() => {
+    initializeTheme();
     checkAuth();
-  }, [checkAuth]);
+  }, []);
 
   if (isCheckingAuth && !authUser)
     return (
-      <div className="flex items-center justify-center h-screen">
-        <Loader className="size-10 animate-spin" />
+      <div className="flex items-center justify-center h-screen bg-background">
+        <div className="flex flex-col items-center gap-4 animate-fade-in">
+          <div className="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center shadow-lg">
+            <Loader2 className="w-7 h-7 text-primary-foreground animate-spin" />
+          </div>
+          <p className="text-muted-foreground text-sm font-medium tracking-wide">
+            Loading ChatConnect...
+          </p>
+        </div>
       </div>
     );
 
   return (
-    <div data-theme="bumblebee">
-      <Navbar className="sticky top-0 z-10" />
-      <Routes>
-        <Route
-          path="/"
-          element={authUser ? <HomePage /> : <Navigate to="/login" />}
+    <TooltipProvider>
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <Routes>
+          <Route path="/" element={authUser ? <HomePage /> : <Navigate to="/login" />} />
+          <Route path="/login" element={!authUser ? <LoginPage /> : <Navigate to="/" />} />
+          <Route path="/signup" element={!authUser ? <SignupPage /> : <Navigate to="/" />} />
+          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/profile" element={authUser ? <ProfilePage /> : <Navigate to="/login" />} />
+        </Routes>
+        <ToastContainer
+          position="bottom-right"
+          autoClose={3000}
+          hideProgressBar={false}
+          closeOnClick
+          pauseOnHover
+          theme="dark"
+          toastStyle={{
+            background: "var(--popover)",
+            color: "var(--popover-foreground)",
+            border: "1px solid var(--border)",
+            borderRadius: "12px",
+            fontSize: "14px",
+          }}
         />
-        <Route
-          path="/login"
-          element={!authUser ? <LoginPage /> : <Navigate to="/" />}
-        />
-        <Route
-          path="/signup"
-          element={!authUser ? <SignupPage /> : <Navigate to="/" />}
-        />
-        <Route path="/settings" element={<SettingsPage />} />
-        <Route
-          path="/profile"
-          element={authUser ? <ProfilePage /> : <Navigate to="/login" />}
-        />
-      </Routes>
-      <ToastContainer />
-    </div>
+      </div>
+    </TooltipProvider>
   );
 };
 
